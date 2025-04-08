@@ -111,3 +111,21 @@ If everything is set up well, you will see similar output:
 
 If you have any troubles with installation, please contact the course instructor (Oleh Omelchenko) in slack for assist.
 
+
+## Final Project Overview
+
+This final project built using dbt and BigQuery, based on the Brazilian E-commerce dataset. The project includes:
+
+- **Source Definitions:** All raw datasets are declared as dbt sources with descriptive column-level documentation.
+- **Staging Models:** Data is cleaned and standardized using staging models.
+- **Integrated Data Model:** `fp_sales_full` combines orders, customers, items, and payments with nested arrays.
+- **Analytical Mart Models:** Includes five analytical models:
+  - `order_performance_analysis`
+  - `customer_behavior_analysis`
+  - `product_performance`
+  - `seller_analytics`
+  - `payment_analysis`
+- **Custom Data Tests:** Validates model outputs by comparing aggregated values across models.
+- **Documentation:** All models and sources are documented and surfaced in both the dbt Docs UI and BigQuery.
+
+

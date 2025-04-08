@@ -1,0 +1,153 @@
+version: 2
+
+sources:
+  - name: fp_sources
+    schema: dshulevskyi
+    tables:
+      - name: fp_customers
+        description: >
+          This dataset has information about the customer and its location. 
+          Each order is assigned to a unique customer_id. The purpose of customer_unique_id 
+          is to identify customers that made repurchases at the store.
+        columns:
+          - name: customer_id
+            description: Key to the orders dataset. Each order has a unique customer_id.
+            tests: [not_null, unique]
+          - name: customer_unique_id
+            description: Unique identifier of a customer.
+            tests: [not_null]
+          - name: customer_zip_code_prefix
+            description: First five digits of customer zip code.
+            tests: [not_null]
+          - name: customer_city
+            description: Customer city name.
+            tests: [not_null]
+          - name: customer_state
+            description: Customer state.
+            tests: [not_null]
+
+      - name: fp_order_items
+        description: >
+          This dataset includes data about the items purchased within each order.
+          Freight and price are listed per item and must be summed per order if needed.
+        columns:
+          - name: order_id
+            description: Order unique identifier.
+            tests: [not_null]
+          - name: order_item_id
+            description: Sequential number identifying number of items included in the same order.
+            tests: [not_null]
+          - name: product_id
+            description: Product unique identifier.
+            tests: [not_null]
+          - name: seller_id
+            description: Seller unique identifier.
+            tests: [not_null]
+          - name: shipping_limit_date
+            description: Seller shipping limit date for handing the order to the logistics partner.
+            tests: [not_null]
+          - name: price
+            description: Item price.
+            tests: [not_null]
+          - name: freight_value
+            description: Item freight value (split between items in an order).
+            tests: [not_null]
+
+      - name: fp_order_payments
+        description: >
+          This dataset includes data about the orders payment options. 
+          An order may be paid using multiple methods.
+        columns:
+          - name: order_id
+            description: Unique identifier of an order.
+            tests: [not_null]
+          - name: payment_sequential
+            description: A customer may pay an order with multiple payment methods.
+            tests: [not_null]
+          - name: payment_type
+            description: Method of payment chosen by the customer.
+            tests: [not_null]
+          - name: payment_installments
+            description: Number of installments chosen by the customer.
+            tests: [not_null]
+          - name: payment_value
+            description: Transaction value.
+            tests: [not_null]
+
+      - name: fp_orders
+        description: >
+          This is the core dataset. From each order, you can find all related information 
+          such as customer, payment, delivery, and status.
+        columns:
+          - name: order_id
+            description: Unique identifier of the order.
+            tests: [not_null, unique]
+          - name: customer_id
+            description: Key to the customer dataset.
+            tests: [not_null]
+          - name: order_status
+            description: Reference to the order status (delivered, shipped, etc).
+            tests: [not_null]
+          - name: order_purchase_timestamp
+            description: Timestamp when the order was placed.
+            tests: [not_null]
+          - name: order_approved_at
+            description: Payment approval timestamp.
+          - name: order_delivered_carrier_date
+            description: Timestamp when the order was handed to the logistics partner.
+          - name: order_delivered_customer_date
+            description: Actual delivery date to the customer.
+          - name: order_estimated_delivery_date
+            description: Estimated delivery date informed to the customer at purchase.
+
+      - name: fp_products
+        description: >
+          This dataset includes data about the products sold by Olist.
+        columns:
+          - name: product_id
+            description: Unique product identifier.
+            tests: [not_null, unique]
+          - name: product_category_name
+            description: Root category of product, in Portuguese.
+          - name: product_name_lenght
+            description: Number of characters in the product name.
+          - name: product_description_lenght
+            description: Number of characters in the product description.
+          - name: product_photos_qty
+            description: Number of published product photos.
+          - name: product_weight_g
+            description: Product weight in grams.
+          - name: product_length_cm
+            description: Product length in centimeters.
+          - name: product_height_cm
+            description: Product height in centimeters.
+          - name: product_width_cm
+            description: Product width in centimeters.
+
+      - name: fp_sellers
+        description: >
+          This dataset includes data about the sellers that fulfilled orders made at Olist.
+        columns:
+          - name: seller_id
+            description: Seller unique identifier.
+            tests: [not_null, unique]
+          - name: seller_zip_code_prefix
+            description: First 5 digits of seller zip code.
+            tests: [not_null]
+          - name: seller_city
+            description: Seller city name.
+            tests: [not_null]
+          - name: seller_state
+            description: Seller state.
+            tests: [not_null]
+
+      - name: fp_category_name
+        description: >
+          This table translates the product category name from Portuguese to English.
+        columns:
+          - name: string_field_0
+            description: Category name in Portuguese.
+            tests: [not_null, unique]
+          - name: string_field_1
+            description: Category name in English.
+            tests: [not_null]

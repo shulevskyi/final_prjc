@@ -1,0 +1,240 @@
+version: 2
+
+models:
+  - name: stg_fp_orders
+    description: "Staging model for orders with cleaned timestamps and derived fields like delivery_days and is_delivered."
+    columns:
+      - name: order_id
+        description: "Primary key of the order table."
+        tests: [not_null, unique]
+      - name: customer_id
+        description: "Foreign key to the customer."
+        tests: [not_null]
+      - name: order_status
+        description: "Status of the order (delivered, shipped, etc)."
+        tests: [not_null]
+      - name: order_purchase_timestamp
+        description: "Timestamp when the order was placed."
+        tests: [not_null]
+      - name: delivery_days
+        description: "Time difference in days between purchase and delivery."
+      - name: is_delivered
+        description: "Boolean flag indicating whether the order was delivered."
+
+  - name: stg_fp_customers
+    description: "Staging model for customers with standardized text fields."
+    columns:
+      - name: customer_id
+        description: "Unique identifier of the customer."
+        tests: [not_null, unique]
+      - name: customer_unique_id
+        description: "Represents the same individual across multiple accounts."
+        tests: [not_null]
+      - name: customer_zip_code_prefix
+        description: "First 5 digits of customer's zip code."
+        tests: [not_null]
+      - name: customer_city
+        description: "Customer's city."
+        tests: [not_null]
+      - name: customer_state
+        description: "Customer's state."
+        tests: [not_null]
+
+  - name: stg_fp_order_items
+    description: "Staging model for order items including cleaned numeric fields."
+    columns:
+      - name: order_id
+        description: "Order identifier."
+        tests: [not_null]
+      - name: order_item_id
+        description: "Line item number within the order."
+        tests: [not_null]
+      - name: product_id
+        description: "Product associated with this line item."
+        tests: [not_null]
+      - name: seller_id
+        description: "Seller of the product."
+        tests: [not_null]
+      - name: shipping_limit_date
+        description: "Deadline for the seller to hand off to carrier."
+        tests: [not_null]
+      - name: price
+        description: "Price of the item."
+        tests: [not_null]
+      - name: freight_value
+        description: "Shipping cost for the item."
+        tests: [not_null]
+
+  - name: stg_fp_order_payments
+    description: "Staging model for payment data with cleaned text and amounts."
+    columns:
+      - name: order_id
+        description: "Order identifier associated with the payment."
+        tests: [not_null]
+      - name: payment_sequential
+        description: "Sequence number of the payment method used."
+        tests: [not_null]
+      - name: payment_type
+        description: "Payment method (e.g. credit_card, boleto)."
+        tests: [not_null]
+      - name: payment_installments
+        description: "Number of installments for the payment."
+        tests: [not_null]
+      - name: payment_value
+        description: "Total amount paid."
+        tests: [not_null]
+
+  - name: stg_fp_products
+    description: "Staging model for product data with cleaned category names."
+    columns:
+      - name: product_id
+        description: "Primary key of the product."
+        tests: [not_null, unique]
+      - name: product_category_name
+        description: "Product's root category in Portuguese."
+      - name: product_name_lenght
+        description: "Number of characters in the product name."
+      - name: product_description_lenght
+        description: "Number of characters in the product description."
+      - name: product_photos_qty
+        description: "Number of product photos."
+      - name: product_weight_g
+        description: "Weight of the product in grams."
+      - name: product_length_cm
+        description: "Length of the product in centimeters."
+      - name: product_height_cm
+        description: "Height of the product in centimeters."
+      - name: product_width_cm
+        description: "Width of the product in centimeters."
+
+  - name: stg_fp_sellers
+    description: "Staging model for seller data with lowercase city names."
+    columns:
+      - name: seller_id
+        description: "Unique identifier of the seller."
+        tests: [not_null, unique]
+      - name: seller_zip_code_prefix
+        description: "First 5 digits of the seller's zip code."
+        tests: [not_null]
+      - name: seller_city
+        description: "Seller's city."
+        tests: [not_null]
+      - name: seller_state
+        description: "Seller's state."
+        tests: [not_null]
+
+  - name: stg_fp_category_name
+    description: "Staging model for translated product categories."
+    columns:
+      - name: product_category_name
+        description: "Category name in Portuguese."
+        tests: [not_null]
+      - name: product_category_name_english
+        description: "Category name in English."
+        tests: [not_null]
+
+  - name: fp_sales_full
+    description: |
+      A denormalized, order-level table combining order, customer, product, 
+      category, and payment data. 
+    
+      - Granularity: 1 row per order_id.
+      - Nested arrays for items (with product + category translations) and payments.
+      - Partitioned by order_purchase_timestamp, clustered by order_status + customer_id.
+    columns:
+      - name: order_id
+        description: "Primary key for the order."
+        tests: [not_null, unique]
+      - name: order_status
+        description: "Order status (delivered, shipped, canceled, etc)."
+      - name: customer_id
+        description: "Links to the customer placing this order."
+      - name: order_items
+        description: "Array of item structs, containing product/category info, seller_id, price, freight."
+      - name: order_payments
+        description: "Array of payment structs, containing payment_type, installments, value."
+      - name: is_delivered
+        description: "Boolean if the order was delivered."
+      - name: delivery_days
+        description: "Number of days from order placement to delivery."
+
+  - name: order_performance_analysis
+    description: >
+      Provides daily-level metrics of orders and revenue, 
+      grouped by order_status and customer_state.
+    columns:
+      - name: order_date
+        description: "Day-level date of the order (truncated from order_purchase_timestamp)."
+      - name: order_status
+        description: "Delivery status of the order (e.g. delivered, shipped, etc.)."
+      - name: customer_state
+        description: "State/region of the customer placing the order."
+      - name: total_orders
+        description: "Number of distinct orders for that (date, status, state)."
+      - name: total_revenue
+        description: "Sum of all item prices (order revenue) for that (date, status, state)."
+
+  - name: customer_behavior_analysis
+    description: >
+      Classifies orders as 'new_customer' vs 'returning_customer', 
+      based on the first purchase date of each customer, 
+      then aggregates monthly orders and revenue.
+    columns:
+      - name: order_month
+        description: "Month of the purchase (truncated timestamp)."
+      - name: customer_type
+        description: "Flag indicating if order is from a new or returning customer."
+      - name: total_orders
+        description: "Number of distinct orders in this (month, customer_type) grouping."
+      - name: total_revenue
+        description: "Sum of all item prices (order revenue) in this grouping."
+
+  - name: payment_analysis
+    description: >
+      Explodes payment array to analyze method usage, installment counts, 
+      and total payment value, aggregated by month.
+    columns:
+      - name: order_month
+        description: "Month of the order (truncated from order_purchase_timestamp)."
+      - name: payment_type
+        description: "Method used for payment (e.g. credit_card, boleto)."
+      - name: payment_installments
+        description: "Number of installments for this payment."
+      - name: payment_count
+        description: "Total count of individual payment records."
+      - name: total_payment_value
+        description: "Sum of payment_value for these records."
+
+  - name: product_performance
+    description: >
+      Aggregates products by month and state, ranks them by total sales, 
+      showing which products are top performers in each region/time window.
+    columns:
+      - name: month
+        description: "Month of the order (truncated date)."
+      - name: customer_state
+        description: "State of the customer placing the order."
+      - name: product_id
+        description: "Unique product identifier."
+      - name: order_count
+        description: "Number of distinct orders containing the product."
+      - name: total_sales
+        description: "Sum of item prices for the product in the given month/state."
+      - name: product_rank
+        description: "Ranking of the product in that month/state by total sales."
+
+  - name: seller_analytics
+    description: >
+      Aggregates seller performance metrics (sales, freight, number of orders) 
+      at a monthly granularity to evaluate their efficiency.
+    columns:
+      - name: order_month
+        description: "Month of the order (truncated timestamp)."
+      - name: seller_id
+        description: "Unique identifier for the seller."
+      - name: total_sales
+        description: "Sum of item prices for all orders connected to this seller in that month."
+      - name: total_freight
+        description: "Sum of freight_value for orders from this seller in that month."
+      - name: total_orders
+        description: "Count of distinct orders placed with this seller in that month."
