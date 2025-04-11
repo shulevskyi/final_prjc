@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: test_dataset                     # This is the "source name" in dbt
+    database: econ250-2025                 # The GCP project
+    schema: test_dataset                   # The BigQuery dataset
+    tables:
+      - name: assignment5_input            # Table "reference name" in dbt
+        identifier: assignment5_input      # Actual BigQuery table name
